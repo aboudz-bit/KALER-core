@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useQueryClient } from '@tanstack/react-query';
 import { alertsApi } from '../api/endpoints';
 import { queryKeys } from '../api/queryKeys';
+import { useAuth } from './AuthProvider';
 import type { Alert, EmergencyMode } from '@kaler/shared';
 
 interface EmergencyState {
@@ -9,6 +10,7 @@ interface EmergencyState {
   mode: EmergencyMode | null;
   activeAlert: Alert | null;
   activeAlerts: Alert[];
+  isLoading: boolean;
 }
 
 interface EmergencyContextType extends EmergencyState {
@@ -21,11 +23,13 @@ const EmergencyContext = createContext<EmergencyContextType | null>(null);
 
 export function EmergencyProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const [state, setState] = useState<EmergencyState>({
     isActive: false,
     mode: null,
     activeAlert: null,
     activeAlerts: [],
+    isLoading: true,
   });
 
   const refresh = useCallback(async () => {
@@ -41,15 +45,32 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       setState({
         isActive: emergency?.isActive || false,
         mode: emergency?.mode || null,
-        activeAlert: activeAlerts.find(
-          (a: any) => a.id === emergency?.activeAlertId
-        ) || null,
+        activeAlert:
+          activeAlerts.find(
+            (a: any) => a.id === emergency?.activeAlertId
+          ) || null,
         activeAlerts,
+        isLoading: false,
       });
     } catch {
-      // ignore - will retry on next refresh
+      setState((s) => ({ ...s, isLoading: false }));
     }
   }, []);
+
+  // Fetch emergency state on mount when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      refresh();
+    } else {
+      setState({
+        isActive: false,
+        mode: null,
+        activeAlert: null,
+        activeAlerts: [],
+        isLoading: false,
+      });
+    }
+  }, [isAuthenticated, refresh]);
 
   const activateEmergency = useCallback(
     (mode: EmergencyMode, alert: Alert) => {
@@ -58,10 +79,14 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
         isActive: true,
         mode,
         activeAlert: alert,
+        activeAlerts: s.activeAlerts.some((a) => a.id === alert.id)
+          ? s.activeAlerts
+          : [...s.activeAlerts, alert],
       }));
-      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
-      queryClient.invalidateQueries({ queryKey: queryKeys.alerts.emergencyState });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.alerts.emergencyState,
+      });
     },
     [queryClient]
   );
@@ -74,7 +99,11 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       activeAlert: null,
     }));
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
-    queryClient.invalidateQueries({ queryKey: queryKeys.alerts.emergencyState });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.alerts.emergencyState,
+    });
+    // Also refetch active alerts list
+    queryClient.invalidateQueries({ queryKey: ['alerts'] });
   }, [queryClient]);
 
   return (

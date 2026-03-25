@@ -65,6 +65,15 @@ export default function AlertsScreen() {
       return;
     }
 
+    if (!isGlobal && selectedZones.length === 0) {
+      haptic.error();
+      Alert.alert(
+        'No Zones Selected',
+        'Please select at least one target zone, or switch to Global.'
+      );
+      return;
+    }
+
     try {
       await createAlert.mutateAsync({
         title: title.trim(),

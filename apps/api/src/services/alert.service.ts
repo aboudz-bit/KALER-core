@@ -12,7 +12,11 @@ import { isPointInPolygon } from '@kaler/shared';
 import type { CreateAlertInput, Coordinate } from '@kaler/shared';
 
 export async function getAllAlerts(activeOnly = false) {
-  let query = db.select().from(alerts).orderBy(desc(alerts.createdAt)).$dynamic();
+  let query = db
+    .select()
+    .from(alerts)
+    .orderBy(desc(alerts.createdAt))
+    .$dynamic();
   if (activeOnly) {
     query = query.where(eq(alerts.isActive, true));
   }
@@ -29,7 +33,24 @@ export async function getAlertById(id: string) {
   return alert;
 }
 
-export async function createAlert(input: CreateAlertInput, createdBy: string) {
+/**
+ * Helper: get the singleton emergency state row, creating it if it doesn't exist.
+ */
+async function getOrCreateEmergencyRow() {
+  const [existing] = await db.select().from(emergencyState).limit(1);
+  if (existing) return existing;
+
+  const [created] = await db
+    .insert(emergencyState)
+    .values({ isActive: false })
+    .returning();
+  return created;
+}
+
+export async function createAlert(
+  input: CreateAlertInput,
+  createdBy: string
+) {
   const [alert] = await db
     .insert(alerts)
     .values({
@@ -42,6 +63,7 @@ export async function createAlert(input: CreateAlertInput, createdBy: string) {
 
   // If alert has emergency mode, update emergency state
   if (input.emergencyMode) {
+    const row = await getOrCreateEmergencyRow();
     await db
       .update(emergencyState)
       .set({
@@ -51,7 +73,8 @@ export async function createAlert(input: CreateAlertInput, createdBy: string) {
         activatedBy: createdBy,
         activatedAt: new Date(),
         updatedAt: new Date(),
-      });
+      })
+      .where(eq(emergencyState.id, row.id));
   }
 
   // Create receipts for targeted users
@@ -102,12 +125,16 @@ export async function deactivateAlert(id: string) {
       .limit(1);
 
     if (otherActiveEmergency.length === 0) {
-      await db.update(emergencyState).set({
-        isActive: false,
-        mode: null,
-        activeAlertId: null,
-        updatedAt: new Date(),
-      });
+      const row = await getOrCreateEmergencyRow();
+      await db
+        .update(emergencyState)
+        .set({
+          isActive: false,
+          mode: null,
+          activeAlertId: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(emergencyState.id, row.id));
     }
   }
 
@@ -196,6 +223,8 @@ async function getTargetedUsers(isGlobal: boolean, zoneIds: string[]) {
   const relevantZones = targetZones.filter((z) =>
     zoneIds.includes(z.id)
   );
+
+  if (relevantZones.length === 0) return [];
 
   // Get all users with GPS
   const allUsers = await db

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
@@ -16,8 +16,9 @@ const SOCKET_URL = Platform.select({
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
   const { token, isAuthenticated } = useAuth();
-  const { activateEmergency, deactivateEmergency } = useEmergency();
+  const { activateEmergency, deactivateEmergency, refresh } = useEmergency();
   const queryClient = useQueryClient();
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
@@ -25,19 +26,36 @@ export function useSocket() {
     const socket = io(SOCKET_URL!, {
       auth: { token },
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 2000,
+      reconnectionDelayMax: 30000,
     });
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
       console.log('Socket connected');
+      setIsConnected(true);
+      // Refresh emergency state on reconnect to catch missed events
+      refresh();
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.log('Socket connection error:', error.message);
+      setIsConnected(false);
     });
 
     socket.on('alert_created', (alert) => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.alerts.emergencyState,
+      });
       if (alert.emergencyMode) {
         activateEmergency(alert.emergencyMode, alert);
       }
@@ -46,6 +64,9 @@ export function useSocket() {
     socket.on('alert_updated', () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.alerts.emergencyState,
+      });
     });
 
     socket.on('emergency_mode_changed', (data) => {
@@ -55,10 +76,14 @@ export function useSocket() {
         deactivateEmergency();
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.alerts.emergencyState,
+      });
     });
 
     socket.on('receipt_confirmed', () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
     });
 
     socket.on('user_status_changed', () => {
@@ -78,7 +103,7 @@ export function useSocket() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [isAuthenticated, token, queryClient, activateEmergency, deactivateEmergency]);
+  }, [isAuthenticated, token, queryClient, activateEmergency, deactivateEmergency, refresh]);
 
-  return socketRef.current;
+  return { socket: socketRef.current, isConnected };
 }

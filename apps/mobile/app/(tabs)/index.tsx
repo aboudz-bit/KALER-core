@@ -66,6 +66,7 @@ export default function DashboardScreen() {
       <EmergencyModeBar
         onDeactivate={handleDeactivate}
         canDeactivate={!!canDeactivate}
+        deactivating={deactivateAlert.isPending}
       />
 
       {stats && <PersonnelSummary stats={stats} />}

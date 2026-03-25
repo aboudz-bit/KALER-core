@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEmergency } from '../../providers/EmergencyProvider';
 import { colors } from '../../utils/colors';
@@ -8,9 +8,10 @@ import { haptic } from '../../utils/haptics';
 interface Props {
   onDeactivate?: () => void;
   canDeactivate?: boolean;
+  deactivating?: boolean;
 }
 
-export function EmergencyModeBar({ onDeactivate, canDeactivate }: Props) {
+export function EmergencyModeBar({ onDeactivate, canDeactivate, deactivating }: Props) {
   const { isActive, mode } = useEmergency();
 
   if (!isActive) return null;
@@ -33,16 +34,24 @@ export function EmergencyModeBar({ onDeactivate, canDeactivate }: Props) {
       {canDeactivate && onDeactivate && (
         <Pressable
           onPress={() => {
+            if (deactivating) return;
             haptic.heavy();
             onDeactivate();
           }}
+          disabled={deactivating}
           style={({ pressed }) => [
             styles.deactivateBtn,
-            { opacity: pressed ? 0.7 : 1 },
+            { opacity: deactivating ? 0.5 : pressed ? 0.7 : 1 },
           ]}
         >
-          <Ionicons name="power" size={16} color={colors.white} />
-          <Text style={styles.deactivateText}>END</Text>
+          {deactivating ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <>
+              <Ionicons name="power" size={16} color={colors.white} />
+              <Text style={styles.deactivateText}>END</Text>
+            </>
+          )}
         </Pressable>
       )}
     </View>

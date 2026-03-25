@@ -3,6 +3,13 @@ import { validate } from '../middleware/validate';
 import { authenticate, authorize } from '../middleware/auth';
 import { createAlertSchema, respondToAlertSchema } from '@kaler/shared';
 import * as alertService from '../services/alert.service';
+import {
+  emitAlertCreated,
+  emitAlertUpdated,
+  emitEmergencyModeChanged,
+  emitReceiptConfirmed,
+  emitUserStatusChanged,
+} from '../socket';
 
 const router = Router();
 
@@ -69,6 +76,15 @@ router.post(
     try {
       const result = await alertService.createAlert(req.body, req.user!.id);
       res.status(201).json({ success: true, data: result });
+
+      // Emit socket events after response
+      emitAlertCreated(result.alert);
+      if (req.body.emergencyMode) {
+        emitEmergencyModeChanged({
+          mode: req.body.emergencyMode,
+          alert: result.alert,
+        });
+      }
     } catch (err) {
       next(err);
     }
@@ -83,6 +99,16 @@ router.post(
     try {
       const alert = await alertService.deactivateAlert(req.params.id);
       res.json({ success: true, data: alert });
+
+      // Emit socket events after response
+      emitAlertUpdated(alert);
+      if (alert.emergencyMode) {
+        // Check current emergency state to see if it was actually deactivated
+        const emergencyState = await alertService.getEmergencyState();
+        if (!emergencyState.isActive) {
+          emitEmergencyModeChanged({ mode: null });
+        }
+      }
     } catch (err) {
       next(err);
     }
@@ -99,6 +125,12 @@ router.post(
         req.user!.id
       );
       res.json({ success: true, data: receipt });
+
+      // Emit socket event
+      emitReceiptConfirmed({
+        alertId: req.params.id,
+        userId: req.user!.id,
+      });
     } catch (err) {
       next(err);
     }
@@ -117,6 +149,12 @@ router.post(
         req.body.response
       );
       res.json({ success: true, data: receipt });
+
+      // Emit socket event
+      emitUserStatusChanged({
+        userId: req.user!.id,
+        status: req.body.response,
+      });
     } catch (err) {
       next(err);
     }

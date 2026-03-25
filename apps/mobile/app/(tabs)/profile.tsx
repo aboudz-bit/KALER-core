@@ -49,6 +49,8 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const isResponding = confirmReceipt.isPending || respondToAlert.isPending;
+
   const handleRespond = async (
     alertId: string,
     response: 'safe' | 'need_help'
@@ -98,7 +100,7 @@ export default function ProfileScreen() {
               title="I'm Safe"
               variant="success"
               onPress={() => handleRespond(activeAlerts[0].id, 'safe')}
-              loading={respondToAlert.isPending}
+              loading={isResponding}
               icon={
                 <Ionicons
                   name="checkmark-circle"
@@ -112,7 +114,7 @@ export default function ProfileScreen() {
               title="Need Help"
               variant="danger"
               onPress={() => handleRespond(activeAlerts[0].id, 'need_help')}
-              loading={respondToAlert.isPending}
+              loading={isResponding}
               icon={
                 <Ionicons name="warning" size={20} color={colors.white} />
               }
