@@ -66,6 +66,9 @@ export interface DashboardStats {
 }
 
 /** Socket event types */
+import type { Alert } from '../schemas/alert.schema';
+import type { Zone } from '../schemas/zone.schema';
+
 export interface SocketEvents {
   alert_created: Alert;
   alert_updated: Alert;

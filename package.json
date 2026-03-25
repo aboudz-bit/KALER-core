@@ -1,20 +1,19 @@
 {
   "name": "kaler-core",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
   "scripts": {
-    "dev:api": "npm run dev --workspace=@kaler/api",
-    "dev:mobile": "npm run dev --workspace=@kaler/mobile",
-    "build:api": "npm run build --workspace=@kaler/api",
-    "build:shared": "npm run build --workspace=@kaler/shared",
-    "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "db:generate": "npm run db:generate --workspace=@kaler/api",
-    "db:migrate": "npm run db:migrate --workspace=@kaler/api",
-    "db:seed": "npm run db:seed --workspace=@kaler/api"
+    "dev:api": "pnpm --filter @kaler/api dev",
+    "dev:mobile": "pnpm --filter @kaler/mobile dev",
+    "build": "pnpm --filter @kaler/shared build && pnpm --filter @kaler/api build && pnpm --filter @kaler/mobile build",
+    "build:shared": "pnpm --filter @kaler/shared build",
+    "build:api": "pnpm --filter @kaler/shared build && pnpm --filter @kaler/api build",
+    "build:mobile": "pnpm --filter @kaler/shared build && pnpm --filter @kaler/mobile build",
+    "serve": "pnpm --filter @kaler/api serve & pnpm --filter @kaler/mobile serve",
+    "test": "pnpm -r run test --if-present",
+    "lint": "pnpm -r run lint --if-present",
+    "db:generate": "pnpm --filter @kaler/api db:generate",
+    "db:migrate": "pnpm --filter @kaler/api db:migrate",
+    "db:seed": "pnpm --filter @kaler/api db:seed"
   },
   "engines": {
     "node": ">=18"

@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
+// Try loading .env from multiple locations (works from both src/ and dist/)
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 export const env = {
   DATABASE_URL:
