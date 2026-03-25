@@ -1,0 +1,22 @@
+{
+  "name": "kaler-core",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@kaler/api",
+    "dev:mobile": "npm run dev --workspace=@kaler/mobile",
+    "build:api": "npm run build --workspace=@kaler/api",
+    "build:shared": "npm run build --workspace=@kaler/shared",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "npm run db:generate --workspace=@kaler/api",
+    "db:migrate": "npm run db:migrate --workspace=@kaler/api",
+    "db:seed": "npm run db:seed --workspace=@kaler/api"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

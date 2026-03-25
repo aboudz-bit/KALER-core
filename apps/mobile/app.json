@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "KALER Emergency",
+    "slug": "kaler-emergency",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "kaler",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kaler.emergency",
+      "config": {
+        "googleMapsApiKey": "YOUR_API_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "KALER needs your location for zone-based emergency alerts.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "KALER needs your location to track your safety during emergencies."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E3A5F"
+      },
+      "package": "com.kaler.emergency",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_API_KEY"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router", "expo-location", "expo-secure-store"]
+  }
+}
