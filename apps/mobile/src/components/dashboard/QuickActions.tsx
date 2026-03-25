@@ -1,38 +1,71 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors } from '../../utils/colors';
+import { haptic } from '../../utils/haptics';
 import { useAuth } from '../../providers/AuthProvider';
 import { hasPermission } from '@kaler/shared';
 
+interface ActionItem {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  route: string;
+  minRole?: string;
+}
+
+const ACTIONS: ActionItem[] = [
+  {
+    label: 'Send Alert',
+    icon: 'megaphone',
+    color: colors.danger,
+    route: '/(tabs)/alerts',
+    minRole: 'eco',
+  },
+  {
+    label: 'Personnel',
+    icon: 'people',
+    color: colors.secondary,
+    route: '/(tabs)/users',
+  },
+  {
+    label: 'Zone Map',
+    icon: 'map',
+    color: colors.primaryLight,
+    route: '/(tabs)/map',
+  },
+];
+
 export function QuickActions() {
   const { user } = useAuth();
-  const canCreateAlert = user && hasPermission(user.role as any, 'eco');
+
+  const visibleActions = ACTIONS.filter((a) => {
+    if (!a.minRole) return true;
+    return user && hasPermission(user.role as any, a.minRole as any);
+  });
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
       <View style={styles.grid}>
-        {canCreateAlert && (
-          <TouchableOpacity
-            style={[styles.action, { backgroundColor: colors.danger }]}
-            onPress={() => router.push('/(tabs)/alerts')}
+        {visibleActions.map((action) => (
+          <Pressable
+            key={action.label}
+            style={({ pressed }) => [
+              styles.action,
+              { backgroundColor: action.color },
+              pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+            ]}
+            onPress={() => {
+              haptic.light();
+              router.push(action.route as any);
+            }}
           >
-            <Text style={styles.actionText}>Send Alert</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.action, { backgroundColor: colors.secondary }]}
-          onPress={() => router.push('/(tabs)/users')}
-        >
-          <Text style={styles.actionText}>View Personnel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.action, { backgroundColor: colors.primaryLight }]}
-          onPress={() => router.push('/(tabs)/map')}
-        >
-          <Text style={styles.actionText}>Zone Map</Text>
-        </TouchableOpacity>
+            <Ionicons name={action.icon} size={24} color={colors.white} />
+            <Text style={styles.actionText}>{action.label}</Text>
+          </Pressable>
+        ))}
       </View>
     </View>
   );
@@ -40,24 +73,25 @@ export function QuickActions() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     color: colors.gray[500],
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   grid: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   action: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 14,
     alignItems: 'center',
+    gap: 8,
   },
   actionText: {
     color: colors.white,

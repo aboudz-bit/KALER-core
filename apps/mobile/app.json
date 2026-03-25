@@ -7,15 +7,20 @@
     "scheme": "kaler",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#1E3A5F",
+      "resizeMode": "contain"
+    },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.kaler.emergency",
       "config": {
         "googleMapsApiKey": "YOUR_API_KEY"
       },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "KALER needs your location for zone-based emergency alerts.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "KALER needs your location to track your safety during emergencies."
+        "NSLocationWhenInUseUsageDescription": "KALER needs your location for zone-based emergency alerts and personnel tracking.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "KALER tracks your location to ensure your safety during emergencies, even when the app is in the background.",
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
@@ -31,13 +36,26 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_BACKGROUND_LOCATION",
+        "VIBRATE"
       ]
     },
     "web": {
       "bundler": "metro",
       "output": "static"
     },
-    "plugins": ["expo-router", "expo-location", "expo-secure-store"]
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "KALER tracks your location to ensure your safety during emergencies.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-haptics"
+    ]
   }
 }

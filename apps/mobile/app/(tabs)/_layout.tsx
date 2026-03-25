@@ -1,19 +1,27 @@
 import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Tabs, router } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { useEmergency } from '../../src/providers/EmergencyProvider';
 import { colors } from '../../src/utils/colors';
 
 function EmergencyBanner() {
   const { isActive, mode } = useEmergency();
+  const insets = useSafeAreaInsets();
+
   if (!isActive) return null;
 
-  const modeLabel = mode === 'shelter_in' ? 'SHELTER IN' : 'BLACKOUT';
-  const bgColor = mode === 'blackout' ? colors.emergency.blackout : colors.emergency.shelter_in;
+  const modeLabel = mode === 'shelter_in' ? 'SHELTER IN PLACE' : 'BLACKOUT';
+  const bgColor =
+    mode === 'blackout' ? colors.emergency.blackout : colors.emergency.shelter_in;
+  const icon: keyof typeof Ionicons.glyphMap =
+    mode === 'blackout' ? 'moon' : 'shield';
 
   return (
     <View style={[styles.banner, { backgroundColor: bgColor }]}>
+      <Ionicons name={icon} size={18} color={colors.white} />
       <Text style={styles.bannerText}>EMERGENCY: {modeLabel}</Text>
     </View>
   );
@@ -31,16 +39,28 @@ export default function TabLayout() {
   if (isLoading || !isAuthenticated) return null;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.gray[50] }}>
       <EmergencyBanner />
       <Tabs
         screenOptions={{
           headerStyle: { backgroundColor: colors.primary },
           headerTintColor: colors.white,
-          headerTitleStyle: { fontWeight: '700' },
+          headerTitleStyle: { fontWeight: '700', fontSize: 17 },
+          headerShadowVisible: false,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.gray[400],
-          tabBarStyle: { paddingBottom: 4 },
+          tabBarStyle: {
+            backgroundColor: colors.white,
+            borderTopColor: colors.gray[100],
+            borderTopWidth: 1,
+            height: Platform.OS === 'ios' ? 88 : 64,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+            paddingTop: 8,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+          },
         }}
       >
         <Tabs.Screen
@@ -48,8 +68,8 @@ export default function TabLayout() {
           options={{
             title: 'Dashboard',
             tabBarLabel: 'Dashboard',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>D</Text>
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="grid" size={size} color={color} />
             ),
           }}
         />
@@ -58,8 +78,8 @@ export default function TabLayout() {
           options={{
             title: 'Alerts',
             tabBarLabel: 'Alerts',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>A</Text>
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="notifications" size={size} color={color} />
             ),
           }}
         />
@@ -67,9 +87,9 @@ export default function TabLayout() {
           name="users"
           options={{
             title: 'Personnel',
-            tabBarLabel: 'Users',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>U</Text>
+            tabBarLabel: 'Personnel',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="people" size={size} color={color} />
             ),
           }}
         />
@@ -78,8 +98,8 @@ export default function TabLayout() {
           options={{
             title: 'Zone Map',
             tabBarLabel: 'Map',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>M</Text>
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="map" size={size} color={color} />
             ),
           }}
         />
@@ -88,8 +108,8 @@ export default function TabLayout() {
           options={{
             title: 'Profile',
             tabBarLabel: 'More',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>P</Text>
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="person-circle" size={size} color={color} />
             ),
           }}
         />
@@ -100,13 +120,17 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   banner: {
-    padding: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   bannerText: {
     color: colors.white,
     fontWeight: '900',
-    fontSize: 14,
+    fontSize: 13,
     letterSpacing: 2,
   },
 });

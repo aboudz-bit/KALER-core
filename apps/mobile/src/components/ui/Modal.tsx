@@ -3,10 +3,14 @@ import {
   Modal as RNModal,
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
+  KeyboardAvoidingView,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../utils/colors';
 
 interface Props {
@@ -17,6 +21,8 @@ interface Props {
 }
 
 export function Modal({ visible, onClose, title, children }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
     <RNModal
       visible={visible}
@@ -24,15 +30,37 @@ export function Modal({ visible, onClose, title, children }: Props) {
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeText}>Close</Text>
-          </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? insets.top + 8 : 16 }]}>
+          <View style={styles.handle} />
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>{title}</Text>
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => [
+                styles.closeButton,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}
+              hitSlop={12}
+            >
+              <Ionicons name="close-circle" size={28} color={colors.gray[400]} />
+            </Pressable>
+          </View>
         </View>
-        <ScrollView style={styles.content}>{children}</ScrollView>
-      </View>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentInner}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </RNModal>
   );
 }
@@ -43,29 +71,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[50],
   },
   header: {
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.gray[300],
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.gray[900],
   },
   closeButton: {
-    padding: 8,
-  },
-  closeText: {
-    fontSize: 16,
-    color: colors.secondary,
-    fontWeight: '600',
+    padding: 4,
   },
   content: {
     flex: 1,
-    padding: 16,
+  },
+  contentInner: {
+    padding: 20,
+    paddingBottom: 40,
   },
 });

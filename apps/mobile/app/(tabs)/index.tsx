@@ -7,6 +7,8 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDashboardStats } from '../../src/hooks/queries/useDashboard';
 import { useEmergency } from '../../src/providers/EmergencyProvider';
 import { EmergencyModeBar } from '../../src/components/dashboard/EmergencyModeBar';
@@ -17,6 +19,7 @@ import { useAuth } from '../../src/providers/AuthProvider';
 import { useDeactivateAlert } from '../../src/hooks/mutations/useCreateAlert';
 import { hasPermission } from '@kaler/shared';
 import { colors } from '../../src/utils/colors';
+import { haptic } from '../../src/utils/haptics';
 
 export default function DashboardScreen() {
   const { data: stats, isLoading, refetch, isRefetching } = useDashboardStats();
@@ -31,8 +34,9 @@ export default function DashboardScreen() {
       try {
         await deactivateAlert.mutateAsync(emergency.activeAlert.id);
         emergency.deactivateEmergency();
+        haptic.success();
       } catch {
-        // handled by mutation
+        haptic.error();
       }
     }
   };
@@ -41,6 +45,7 @@ export default function DashboardScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
     );
   }
@@ -49,8 +54,13 @@ export default function DashboardScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          tintColor={colors.primary}
+        />
       }
     >
       <EmergencyModeBar
@@ -62,10 +72,12 @@ export default function DashboardScreen() {
 
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
+          <Ionicons name="notifications" size={22} color={colors.warning} />
           <Text style={styles.statNum}>{stats?.activeAlerts || 0}</Text>
           <Text style={styles.statLabel}>Active Alerts</Text>
         </View>
         <View style={styles.statCard}>
+          <Ionicons name="location" size={22} color={colors.secondary} />
           <Text style={styles.statNum}>{stats?.activeZones || 0}</Text>
           <Text style={styles.statLabel}>Active Zones</Text>
         </View>
@@ -84,28 +96,39 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 32,
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.gray[50],
+  },
+  loadingText: {
+    color: colors.gray[400],
+    fontSize: 14,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 14,
+    padding: 18,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.gray[200],
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   statNum: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.primary,
   },
@@ -113,6 +136,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.gray[500],
     fontWeight: '600',
-    marginTop: 4,
   },
 });
